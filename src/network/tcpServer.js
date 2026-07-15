@@ -3,6 +3,8 @@ const { extractPackets, verifyPacket, parsePacket, verifySignature } = require("
 const { unwrapPayload } = require("../protocol/message");
 const { ReplayGuard } = require("../protocol/replay");
 const { IpRateLimiter } = require("./ipRateLimiter");
+const { IpBlacklist } = require("./ipBlacklist");
+const { logAttack } = require("../security/attackLog");
 const {
   MAX_BUFFER_SIZE,
   MAX_PACKETS_PER_SECOND,
@@ -14,30 +16,51 @@ const {
 
 function startTCPServer(port, options = {}) {
 
-  // 🛡 Garde anti-replay et rate limit par IP PARTAGÉS entre toutes les sockets :
-  // un nonce vu sur une connexion est rejeté sur les autres, et le quota par IP
-  // couvre l'ensemble des connexions d'une même source.
+  // 🛡 État de sécurité PARTAGÉ entre toutes les sockets :
+  //  - replayGuard : un nonce vu sur une connexion est rejeté sur les autres
+  //  - ipRateLimiter : quota cumulé par IP (toutes connexions)
+  //  - blacklist : bannissement temporaire d'une IP après trop d'infractions
   const replayGuard = options.replayGuard || new ReplayGuard();
   const ipRateLimiter = options.ipRateLimiter || new IpRateLimiter();
+  const blacklist = options.blacklist || new IpBlacklist();
 
-  // Nettoyage périodique des compteurs IP inactifs.
-  const cleanupTimer = setInterval(() => ipRateLimiter.cleanup(), 5000);
+  const cleanupTimer = setInterval(() => {
+    ipRateLimiter.cleanup();
+    blacklist.cleanup();
+  }, 5000);
   if (cleanupTimer.unref) cleanupTimer.unref();
 
   const server = net.createServer((socket) => {
 
     const remoteIp = socket.remoteAddress;
+
+    // 🚫 IP déjà bannie : on refuse immédiatement, sans traiter le moindre octet.
+    if (blacklist.isBanned(remoteIp)) {
+      logAttack("banned_reconnect", remoteIp);
+      socket.destroy();
+      return;
+    }
+
     console.log("📡 Client connecté:", remoteIp);
 
     let buffer = Buffer.alloc(0);
     let lastActivity = Date.now();
     let connectionStart = Date.now();
 
-    // 🛡 Rate limit PAR socket (évite qu'un attaquant bloque les autres pairs)
+    // 🛡 Rate limit PAR socket
     let packetCount = 0;
     let rateWindowStart = Date.now();
 
-    // 🔥 timeout automatique Node
+    // Enregistre une infraction : log + strike (peut bannir) + fermeture socket.
+    function flagAttack(type, meta = {}) {
+      const res = blacklist.strike(remoteIp);
+      logAttack(type, remoteIp, { ...meta, strikes: res.count, banned: res.banned });
+      if (res.banned) {
+        console.log("🚫 IP bannie temporairement:", remoteIp);
+      }
+      socket.destroy();
+    }
+
     socket.setTimeout(SOCKET_IDLE_TIMEOUT);
 
     socket.on("timeout", () => {
@@ -52,8 +75,7 @@ function startTCPServer(port, options = {}) {
 
       // 🛡 Protection saturation mémoire : buffer cumulatif borné
       if (buffer.length > MAX_BUFFER_SIZE) {
-        console.log("🚨 Buffer cumulatif trop grand - fermeture");
-        socket.destroy();
+        flagAttack("buffer_overflow", { bufferLen: buffer.length });
         return;
       }
 
@@ -72,45 +94,40 @@ function startTCPServer(port, options = {}) {
           }
           packetCount++;
           if (packetCount > MAX_PACKETS_PER_SECOND) {
-            console.log("🚨 Rate limit socket dépassé - fermeture");
-            socket.destroy();
+            flagAttack("rate_limit_socket", { packetCount });
             return;
           }
 
-          // 🛡 Rate limit cumulé PAR IP (toutes connexions de cette source)
+          // 🛡 Rate limit cumulé PAR IP
           if (!ipRateLimiter.allow(remoteIp, now)) {
-            console.log("🚨 Rate limit IP dépassé - fermeture:", remoteIp);
-            socket.destroy();
+            flagAttack("rate_limit_ip");
             return;
           }
 
           // 🔒 HMAC : intégrité + clé partagée
           if (!verifyPacket(packet)) {
-            console.log("❌ HMAC invalide - fermeture");
-            socket.destroy();
+            flagAttack("hmac_invalid");
             return;
           }
 
           // 🔐 Signature Ed25519 : authenticité de l'émetteur
           const parsed = parsePacket(packet);
           if (!verifySignature(parsed)) {
-            console.log("❌ Signature Ed25519 invalide - fermeture");
-            socket.destroy();
+            flagAttack("signature_invalid");
             return;
           }
 
           // ⏱ Anti-replay : enveloppe timestamp + nonce en tête de payload
-          const { timestamp, nonce, data } = unwrapPayload(parsed.payload);
+          const { timestamp, nonce, data: appData } = unwrapPayload(parsed.payload);
           const replay = replayGuard.check(parsed.nodeId, timestamp, nonce, now);
           if (!replay.ok) {
-            console.log("♻️ Paquet rejeté (" + replay.reason + ") - fermeture");
-            socket.destroy();
+            flagAttack("replay", { reason: replay.reason });
             return;
           }
 
           console.log(
             "✔ Packet valide reçu (type=" + parsed.type +
-            ", data=" + data.length + " octets)"
+            ", data=" + appData.length + " octets)"
           );
 
         }
@@ -119,8 +136,8 @@ function startTCPServer(port, options = {}) {
 
       } catch (err) {
 
-        console.log("🚨 Packet malformé:", err.message);
-        socket.destroy();
+        // Flux malformé (MAGIC invalide, tailles incohérentes, enveloppe absente…)
+        flagAttack("malformed_packet", { error: err.message });
 
       }
 
@@ -132,8 +149,7 @@ function startTCPServer(port, options = {}) {
       const now = Date.now();
 
       if (buffer.length > 0 && now - lastActivity > PARTIAL_PACKET_TIMEOUT) {
-        console.log("🚨 Packet incomplet trop long (Slowloris)");
-        socket.destroy();
+        flagAttack("slowloris");
       }
 
       if (now - connectionStart > MAX_CONNECTION_TIME) {

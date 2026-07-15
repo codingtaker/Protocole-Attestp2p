@@ -1,13 +1,16 @@
 {
   "name": "attestp2p",
   "version": "1.0.0",
-  "description": "Protocole binaire P2P securise sur TCP (Ed25519 + HMAC-SHA256)",
+  "description": "Protocole binaire P2P securise sur TCP (Ed25519 + HMAC, handshake X25519+HKDF, sessions chiffrees)",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
     "test:sprint0": "node tests/sprint0.test.js",
     "test:sprint1": "node tests/sprint1.test.js",
-    "test": "node tests/sprint0.test.js && node tests/sprint1.test.js"
+    "test:sprint2": "node tests/sprint2.test.js",
+    "test:sprint3": "node tests/sprint3.test.js",
+    "test:discovery": "node tests/discovery.multinode.test.js",
+    "test": "node tests/sprint0.test.js && node tests/sprint1.test.js && node tests/sprint2.test.js && node tests/sprint3.test.js"
   },
   "keywords": [],
   "author": "",
