@@ -1,12 +1,15 @@
 
+// ⚠️ HMAC_SECRET doit être défini AVANT le require de packet.js/config.js
+// (le fallback en dur a été retiré côté production).
+const HMAC_KEY = "attestp2p-secret-temp";
+process.env.HMAC_SECRET = HMAC_KEY;
+
 const assert = require("assert");
 const crypto = require("crypto");
 const sodium = require("libsodium-wrappers");
 
 const { initKeys, getPublicKey } = require("../src/crypto/keys");
 const { buildPacket, parsePacket, extractPackets } = require("../src/protocol/packet");
-
-const HMAC_KEY = "archipel-secret-temp";
 
 function verifyHmac(buffer) {
   const body = buffer.slice(0, buffer.length - 32);
@@ -25,45 +28,45 @@ async function runTests() {
 
   await initKeys();
 
-  // ✅ Test 1 — clé publique longueur correcte
+  // Test 1 — clé publique longueur correcte
     const pubKey = getPublicKey();
-    assert.strictEqual(pubKey.length, 32, "❌ Clé publique doit faire 32 bytes");
-    console.log("✔ Clé publique valide (32 bytes)");
+    assert.strictEqual(pubKey.length, 32, "Clé publique doit faire 32 bytes");
+    console.log("Clé publique valide (32 bytes)");
 
-  // ✅ Test 2 — Construction paquet
+  // Test 2 — Construction paquet
     await sodium.ready;
 
-    const payload = Buffer.from("Hello Archipel");
+    const payload = Buffer.from("Hello AttestP2P");
     const packet = buildPacket(0x01, payload, Buffer.from("Signed"));
 
-    assert.ok(packet.length > 73, "❌ Packet trop court");
-    console.log("✔ Packet construit");
+    assert.ok(packet.length > 73, "Packet trop court");
+    console.log("Packet construit");
 
-  // ✅ Test 3 — Parsing correct
+  // Test 3 — Parsing correct
   const parsed = parsePacket(packet);
 
-  assert.strictEqual(parsed.magic, "ARCH", "❌ MAGIC incorrect");
-  assert.strictEqual(parsed.type, 0x01, "❌ TYPE incorrect");
-  assert.strictEqual(parsed.nodeId.length, 32, "❌ NODE_ID incorrect");
-  assert.strictEqual(parsed.payloadLen, payload.length, "❌ PAYLOAD_LEN incorrect");
-  assert.strictEqual(parsed.payload.toString(), "Hello Archipel", "❌ Payload incorrect");
+  assert.strictEqual(parsed.magic, "ARCH", "MAGIC incorrect");
+  assert.strictEqual(parsed.type, 0x01, "TYPE incorrect");
+  assert.strictEqual(parsed.nodeId.length, 32, "NODE_ID incorrect");
+  assert.strictEqual(parsed.payloadLen, payload.length, "PAYLOAD_LEN incorrect");
+  assert.strictEqual(parsed.payload.toString(), "Hello AttestP2P", "Payload incorrect");
 
-  console.log("✔ Header conforme à la spécification");
+  console.log("Header conforme à la spécification");
 
-  // ✅ Test 4 — Intégrité HMAC valide
+  // Test 4 — Intégrité HMAC valide
   const isValid = verifyHmac(packet);
-  assert.strictEqual(isValid, true, "❌ HMAC invalide");
+  assert.strictEqual(isValid, true, "HMAC invalide");
 
-  console.log("✔ HMAC valide");
+  console.log("HMAC valide");
 
-    // ✅ Test 5 — Détection corruption
+    // Test 5 — Détection corruption
     const tampered = Buffer.from(packet);
     tampered[10] = 0x00;
 
     const tamperedValid = verifyHmac(tampered);
-    assert.strictEqual(tamperedValid, false, "❌ Corruption non détectée");
+    assert.strictEqual(tamperedValid, false, "Corruption non détectée");
 
-    console.log("✔ Corruption détectée correctement");
+    console.log("Corruption détectée correctement");
 
     // Test 6 — Fragmentation TCP
     const payload2 = Buffer.from("Boundary Test");
@@ -76,14 +79,14 @@ async function runTests() {
 
     let buffer = Buffer.concat([part1]);
     let result1 = extractPackets(buffer);
-    assert.strictEqual(result1.packets.length, 0, "❌ Fragment ne devrait pas parser");
+    assert.strictEqual(result1.packets.length, 0, "Fragment ne devrait pas parser");
 
     buffer = Buffer.concat([result1.remaining, part2]);
 
     let result2 = extractPackets(buffer);
-    assert.strictEqual(result2.packets.length, 1, "❌ Packet complet attendu");
+    assert.strictEqual(result2.packets.length, 1, "Packet complet attendu");
 
-    console.log("✔ Gestion fragmentation TCP OK");
+    console.log("Gestion fragmentation TCP OK");
 
     // Test 7 — Paquets multiples dans un même buffer
     const packetA = buildPacket(0x01, Buffer.from("A"));
@@ -92,22 +95,32 @@ async function runTests() {
     const combined = Buffer.concat([packetA, packetB]);
     const result3 = extractPackets(combined);
 
-    assert.strictEqual(result3.packets.length, 2, "❌ Doit détecter 2 packets");
-    console.log("✔ Gestion packets collés OK");
+    assert.strictEqual(result3.packets.length, 2, "Doit détecter 2 packets");
+    console.log("Gestion packets collés OK");
 
-    // Test 8 — Mauvaise longueur (attaque)
+    // Test 8a — Longueur incohérente mais < MAX_PAYLOAD_SIZE : buffer trop court,
+    // aucun paquet extrait (pas de throw).
     const corrupted = Buffer.from(packetA);
-
-    // On falsifie la longueur payload
     corrupted.writeUInt32BE(999999, 37);
 
     const result4 = extractPackets(corrupted);
-    assert.strictEqual(result4.packets.length, 0, "❌ Longueur invalide doit être rejetée");
+    assert.strictEqual(result4.packets.length, 0, "Longueur invalide doit être rejetée");
 
-    console.log("✔ Protection longueur invalide OK");
+    console.log("Protection longueur invalide OK (buffer trop court)");
+
+    // Test 8b — payloadLen > MAX_PAYLOAD_SIZE : la branche throw doit être atteinte.
+    const oversized = Buffer.from(packetA);
+    oversized.writeUInt32BE(2_000_000, 37); // > 1MB
+    assert.throws(
+      () => extractPackets(oversized),
+      /Payload size exceeds limit/,
+      "payloadLen abusif doit lever"
+    );
+
+    console.log("Protection payload abusif OK (throw)");
 
     // Test 9 — Signature Ed25519
-    const body = packet.slice(0, packet.length - 96); 
+    const body = packet.slice(0, packet.length - 96);
 
     const isValidSig = sodium.crypto_sign_verify_detached(
     parsed.signature,
@@ -115,13 +128,13 @@ async function runTests() {
     parsed.nodeId
     );
 
-    assert.strictEqual(isValidSig, true, "❌ Signature invalide");
-    console.log("✔ Signature Ed25519 valide");
+    assert.strictEqual(isValidSig, true, "Signature invalide");
+    console.log("Signature Ed25519 valide");
 
   console.log("\n🎉 Tous les tests Sprint 0 sont PASSÉS !");
 }
 
 runTests().catch(err => {
-  console.error("\n❌ Échec des tests :", err.message);
+  console.error("\nÉchec des tests :", err.message);
   process.exit(1);
 });
