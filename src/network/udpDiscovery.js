@@ -15,7 +15,7 @@ const {
   PEER_TTL_MS
 } = require("../config");
 
-function startDiscovery({ nodeId, tcpPort, name = NODE_NAME } = {}) {
+function startDiscovery({ nodeId, tcpPort, securePort, name = NODE_NAME } = {}) {
   if (!nodeId) {
     throw new Error("startDiscovery : nodeId requis");
   }
@@ -30,6 +30,7 @@ function startDiscovery({ nodeId, tcpPort, name = NODE_NAME } = {}) {
       t: "announce",
       nodeId: selfId,
       tcpPort,
+      securePort,
       name
     }));
     socket.send(msg, 0, msg.length, MULTICAST_PORT, MULTICAST_ADDR);
@@ -48,6 +49,7 @@ function startDiscovery({ nodeId, tcpPort, name = NODE_NAME } = {}) {
     peers.set(m.nodeId, {
       address: rinfo.address,
       tcpPort: m.tcpPort,
+      securePort: m.securePort,
       name: m.name,
       lastSeen: Date.now()
     });
@@ -63,7 +65,7 @@ function startDiscovery({ nodeId, tcpPort, name = NODE_NAME } = {}) {
     } catch (err) {
       console.log("⚠️ addMembership échoué:", err.message);
     }
-    socket.setMulticastLoopback(false);
+    socket.setMulticastLoopback(true);
     console.log("📡 Discovery UDP sur", MULTICAST_ADDR + ":" + MULTICAST_PORT);
     announce();
   });
