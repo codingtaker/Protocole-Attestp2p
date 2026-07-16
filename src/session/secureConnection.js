@@ -220,6 +220,7 @@ class SecureConnection extends EventEmitter {
     if (this.initiator) {
       const { message3, session } = this.hs.consumeMessage2(frame);
       this.session = session;
+      this.peerId = session.peerId;
       this._write(message3);
       clearTimeout(this._timeout);
       this._startRekeyTimer();
@@ -230,6 +231,7 @@ class SecureConnection extends EventEmitter {
       this._step = 1;
     } else {
       this.session = this.hs.consumeMessage3(frame);
+      this.peerId = this.session.peerId;
       clearTimeout(this._timeout);
       this.emit("secure", this.session.peerId);
     }

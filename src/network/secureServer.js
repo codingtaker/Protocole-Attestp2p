@@ -45,7 +45,12 @@ function startSecureServer(port, onConnection, options = {}) {
       return;
     }
 
-    const conn = new SecureConnection(socket, { initiator: false, security });
+    const conn = new SecureConnection(socket, {
+      initiator: false,
+      security,
+      maxMsgPerSecond: options.maxMsgPerSecond,
+      rekeyPolicy: options.rekeyPolicy,
+    });
     conn.on("error", (err) => {
       console.log("⚠️ Session refusée (" + ip + "):", err.message);
     });
