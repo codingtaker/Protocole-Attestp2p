@@ -1,4 +1,6 @@
-/* UI React d'Archipel (sans build : React UMD + htm, vendored localement). */
+/* UI React d'Archipel (sans build : React UMD + htm, vendored localement).
+   Rappel React : les attributs de style sont des CLASSES CSS (jamais de
+   style="..." en chaîne, qui déclenche l'erreur React #62). */
 const { useState, useEffect, useRef } = React;
 const html = htm.bind(React.createElement);
 
@@ -27,7 +29,7 @@ function StatusTab({ s }) {
   ];
   return html`<div class="card"><h2>Statut du nœud</h2>
     <div class="grid">${items.map(([k, v]) => html`<div class="stat" key=${k}><div class="k">${k}</div><div class="v">${v}</div></div>`)}</div>
-    <p class="muted" style="margin-top:12px">node_id <span class="mono">${s.nodeId}</span></p>
+    <p class="muted mt12">node_id <span class="mono">${s.nodeId}</span></p>
     <p class="muted">TCP ${s.tcpPort} · secure ${s.securePort} · contrôle ${s.controlPort} · IA ${s.aiEnabled ? "activée" : "désactivée (--no-ai)"}</p>
   </div>`;
 }
@@ -37,8 +39,8 @@ function PeersTab({ peers, reload, onChat }) {
   const connect = async () => { const i = hp.lastIndexOf(":"); await api("POST", "/connect", { host: hp.slice(0, i) || "127.0.0.1", port: Number(hp.slice(i + 1)) }); setHp(""); setTimeout(reload, 600); };
   const trust = async (id) => { await api("POST", "/trust", { nodeId: id }); reload(); };
   return html`<div class="card"><h2>Pairs</h2>
-    <div class="row" style="margin-bottom:10px">
-      <input placeholder="host:securePort (bootstrap)" value=${hp} onInput=${(e) => setHp(e.target.value)} style="flex:1"/>
+    <div class="row mb10">
+      <input class="f1" placeholder="host:securePort (bootstrap)" value=${hp} onInput=${(e) => setHp(e.target.value)}/>
       <button class="act" onClick=${connect}>Connecter</button>
     </div>
     ${(!peers || !peers.length) ? html`<div class="muted">aucun pair</div>` :
@@ -47,7 +49,7 @@ function PeersTab({ peers, reload, onChat }) {
         ${p.self ? html`<span class="tag">moi</span>` : null}
         ${p.connected ? html`<span class="tag">session</span>` : null}
         ${p.trusted ? html`<span class="tag">trust</span>` : null}
-        <span style="margin-left:auto"></span>
+        <span class="mla"></span>
         ${!p.self && p.connected ? html`<button class="ghost" onClick=${() => onChat(p.nodeId)}>Chat</button>` : null}
         ${!p.self && !p.trusted ? html`<button class="ghost" onClick=${() => trust(p.nodeId)}>Trust</button>` : null}
       </div>`)}
@@ -67,7 +69,7 @@ function ChatTab({ peers, peer, setPeer }) {
   const send = async () => { if (!peer || !text.trim()) return; await api("POST", "/msg", { nodeId: peer, text }); setText(""); load(); };
 
   return html`<div class="card"><h2>Chat chiffré</h2>
-    <div class="row" style="margin-bottom:10px">
+    <div class="row mb10">
       <select value=${peer || ""} onChange=${(e) => setPeer(e.target.value)}>
         <option value="">— choisir un pair connecté —</option>
         ${connected.map((p) => html`<option key=${p.nodeId} value=${p.nodeId}>${short(p.nodeId)}</option>`)}
@@ -76,12 +78,12 @@ function ChatTab({ peers, peer, setPeer }) {
     <div class="thread" ref=${boxRef}>
       ${thread.length ? thread.map((m, i) => html`<div class="msg ${m.dir}" key=${i}>${m.text}</div>`) : html`<div class="muted">aucun message</div>`}
     </div>
-    <div class="row" style="margin-top:10px">
-      <input placeholder="message… (astuce: /ask ou @archipel-ai pour l'IA)" value=${text}
-        onInput=${(e) => setText(e.target.value)} onKeyDown=${(e) => e.key === "Enter" && send()} style="flex:1" disabled=${!peer}/>
+    <div class="row mt10">
+      <input class="f1" placeholder="message… (astuce: /ask ou @archipel-ai pour l'IA)" value=${text}
+        onInput=${(e) => setText(e.target.value)} onKeyDown=${(e) => e.key === "Enter" && send()} disabled=${!peer}/>
       <button class="act" onClick=${send} disabled=${!peer}>Envoyer</button>
     </div>
-    <p class="muted" style="margin-top:6px">Les messages transitent chiffrés (XChaCha20-Poly1305). <code>/ask</code> ou <code>@archipel-ai</code> interroge l'assistant IA.</p>
+    <p class="muted mt6">Messages chiffrés (XChaCha20-Poly1305). <code>/ask</code> ou <code>@archipel-ai</code> interroge l'assistant IA.</p>
   </div>`;
 }
 
@@ -100,7 +102,7 @@ function FilesTab({ files, peers, reload }) {
           <option value="">— pair destinataire —</option>
           ${connected.map((p) => html`<option key=${p.nodeId} value=${p.nodeId}>${short(p.nodeId)}</option>`)}
         </select>
-        <input placeholder="chemin du fichier (sur ce nœud)" value=${filepath} onInput=${(e) => setFilepath(e.target.value)} style="flex:1"/>
+        <input class="f1" placeholder="chemin du fichier (sur ce nœud)" value=${filepath} onInput=${(e) => setFilepath(e.target.value)}/>
         <button class="act" onClick=${share} disabled=${!nodeId || !filepath || busy === "share"}>Partager</button>
       </div>
     </div>
@@ -109,7 +111,7 @@ function FilesTab({ files, peers, reload }) {
         files.map((f) => html`<div class="peer" key=${f.file_id}>
           <div><div>${f.filename} <span class="muted">· ${f.size} o · ${f.nb_chunks} chunks</span></div>
             <div class="mono muted">${short(f.file_id)} · de ${f.from}</div></div>
-          <span style="margin-left:auto"></span>
+          <span class="mla"></span>
           <button class="ghost" onClick=${() => download(f.file_id)} disabled=${busy === f.file_id}>${busy === f.file_id ? "…" : "Télécharger"}</button>
         </div>`)}
     </div></div>`;
