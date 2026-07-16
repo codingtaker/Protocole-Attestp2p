@@ -32,13 +32,15 @@ class FileNode extends EventEmitter {
 
   _safeSend(session, buf) { try { session.send(buf); } catch { /* session fermée */ } }
 
-  attachSession(session) {
+  attachSession(session, opts = {}) {
     // Clé de session unique (permet plusieurs pairs, y compris de meme identite en test).
     const peerHex = session.peerId.toString("hex") + "#" + (this._seq = (this._seq || 0) + 1);
     this.sessions.set(peerHex, session);
     this.peerHave.set(peerHex, this.peerHave.get(peerHex) || new Map());
     session._peerHex = peerHex;
-    session.on("message", (buf) => { try { this._onMessage(session, buf); } catch (e) { this.emit("error", e); } });
+    if (opts.manageListener !== false) {
+      session.on("message", (buf) => this.handleMessage(session, buf));
+    }
     session.on("close", () => this._onClose(peerHex));
     // Annonce nos manifests + bitfields connus au nouveau pair.
     for (const fileId of Object.keys(this.store.index.files)) {
@@ -71,8 +73,9 @@ class FileNode extends EventEmitter {
     }
   }
 
-  _onMessage(session, buf) {
-    const m = P.decode(buf);
+  handleMessage(session, buf) {
+    let m;
+    try { m = P.decode(buf); } catch (e) { this.emit("error", e); return; }
     switch (m.type) {
       case P.T.MANIFEST:
         if (verifyManifest(m.manifest)) { this.registerManifest(m.manifest); this.emit("manifest", m.manifest); }

@@ -1,0 +1,42 @@
+1) Démarrage du nœud A (Alice) — IA désactivée (offline)
+   A node_id = 1e73908bde3766a90e5898a1…
+2) Démarrage du nœud B (Bob) + bootstrap vers A (--connect)
+   B node_id = a1e07786f9ccecb8792959b4…
+
+3) [B] archipel peers
+1e73908bde3766a9… [session]  session
+
+4) [B] archipel msg A "…/ask…"  (chat chiffré + déclenchement IA offline)
+✔ message envoyé
+IA: [IA désactivée — mode --no-ai]
+
+5) [A] archipel send B <fichier 200 Ko>  (partage)
+✔ fichier partagé — file_id ed8d0cd414463836941dea7f0b2f13009a78e7938c98d0a403770b869ff93f23 (1 chunks)
+
+6) [B] archipel receive
+ed8d0cd414463836941dea7f0b2f13009a78e7938c98d0a403770b869ff93f23  secret.bin  200000 o  (de 1e73908b)
+
+7) [B] archipel download <file_id>  (vérif SHA-256)
+✔ téléchargé: secret.bin — SHA-256 conforme: true
+   SHA-256 source : ed8d0cd414463836941dea7f0b2f13009a78e7938c98d0a403770b869ff93f23
+   SHA-256 reçu   : ed8d0cd414463836941dea7f0b2f13009a78e7938c98d0a403770b869ff93f23
+
+8) [B] archipel trust A  (Web of Trust)
+✔ pairs approuvés: 1e73908bde3766a9…
+
+9) [B] archipel status
+{
+  "nodeId": "a1e07786f9ccecb8792959b46784e198465d56e77bd25a224d3fdafbe09efb9c",
+  "tcpPort": 7920,
+  "securePort": 7921,
+  "controlPort": 8921,
+  "peersDiscovered": 0,
+  "sessions": 1,
+  "filesLocal": 1,
+  "filesAvailable": 1,
+  "trusted": 1,
+  "aiEnabled": false,
+  "uptimeSec": 4
+}
+
+=== Démo E2E terminée ===
