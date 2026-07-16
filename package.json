@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "Archipel — protocole P2P securise (Ed25519+HMAC, handshake X25519+HKDF, sessions chiffrees, transfert de fichiers BitTorrent-like, chat + IA contextuelle)",
   "main": "src/index.js",
-  "bin": { "archipel": "bin/archipel.js" },
+  "bin": {
+    "archipel": "bin/archipel.js"
+  },
   "scripts": {
     "start": "node bin/archipel.js start",
     "test:sprint0": "node tests/sprint0.test.js",
@@ -16,9 +18,16 @@
     "demo:s2": "node demo/alice-bob-demo.js",
     "demo:file": "node demo/file-transfer-inproc.js",
     "demo:file:procs": "node demo/file-transfer-demo.js",
-    "demo:e2e": "bash demo/sprint4-e2e.sh"
+    "demo:e2e": "node demo/run-e2e.js"
   },
-  "keywords": ["p2p", "e2e-encryption", "ed25519", "x25519", "bittorrent", "cli"],
+  "keywords": [
+    "p2p",
+    "e2e-encryption",
+    "ed25519",
+    "x25519",
+    "bittorrent",
+    "cli"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",

@@ -158,6 +158,11 @@ bascule sur l'autre -> SHA-256 final identique. Preuve : `demo/file-transfer-pro
 npm run demo:e2e
 ```
 
+> Windows : `demo:e2e` utilise automatiquement **Git Bash** (via `demo/run-e2e.js`).
+> Alternative directe : `demo\run-e2e.cmd`, ou depuis PowerShell
+> `& 'C:\Program Files\Git\bin\bash.exe' demo/sprint4-e2e.sh`. Ne PAS utiliser le
+> `bash` de WSL (docker-desktop) qui n'est pas un shell POSIX complet.
+
 Demarre 2 noeuds (identites distinctes), les connecte, liste les pairs, envoie un
 message chiffre + declenche l'IA (fallback offline gracieux), partage puis
 telecharge un fichier (SHA-256 conforme), approuve un pair, affiche le statut.

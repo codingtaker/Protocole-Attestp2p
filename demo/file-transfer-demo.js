@@ -101,4 +101,6 @@ function waitFor(child, marker, tag) {
 
   for (const c of [S1, S2, R]) { try { c.kill("SIGKILL"); } catch {} }
   try { fs.rmSync(TMP, { recursive: true, force: true }); } catch {}
-  try { fs.unlinkSy
+  try { fs.unlinkSync(process.env.IDENTITY_FILE); } catch {}
+  process.exit(okAll ? 0 : 1);
+})().catch((e) => { console.error("Erreur démo:", e.stack); process.exit(1); });

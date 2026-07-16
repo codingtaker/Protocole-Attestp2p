@@ -20,4 +20,9 @@ Frame du message chiffré observée sur le réseau (175 octets) — hexdump :
   0060  c9 be 78 c3 b9 b0 10 25 95 4d 56 ca 24 fe ed 47   ..x....%.MV.$..G
   0070  5b 36 a8 c8 a0 54 ef a2 b0 95 4c ba 6c 31 e0 0a   [6...T....L.l1..
   0080  b4 cf 23 7c fe 96 98 62 93 2f c2 8f d8 e2 a8 70   ..#|...b./.....p
-  0090  53 8c 38 4a a4 1e 25 4a 6c d2 48
+  0090  53 8c 38 4a a4 1e 25 4a 6c d2 48 77 51 27 f3 21   S.8J..%Jl.HwQ'.!
+  ... (15 octets de plus)
+
+Capture réseau complète : demo/alice-bob.pcap
+  Ouvrir avec Wireshark, puis clic droit sur un segment -> "Follow > TCP Stream" :
+  le contenu est uniquement du chiffré (aucun texte lisible).
