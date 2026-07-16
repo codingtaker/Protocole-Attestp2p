@@ -1,11 +1,3 @@
-// Point d'entree de l'application AttestP2P (React Native / Expo).
-//
-// Cette application est un PANNEAU DE CONTROLE distant pour un noeud AttestP2P
-// qui tourne sur un PC. Elle parle au noeud via son API HTTP de controle
-// (demarrer le noeud avec :  attestp2p start --control-host 0.0.0.0).
-//
-// Tout le code est volontairement simple et lisible : libre a vous de le modifier.
-
 import React, { useState } from "react";
 import { SafeAreaView, View, Text, StyleSheet, StatusBar } from "react-native";
 
@@ -19,7 +11,7 @@ import ChatScreen from "./src/screens/ChatScreen";
 import FilesScreen from "./src/screens/FilesScreen";
 
 export default function App() {
-  // URL de base du noeud (ex : http://192.168.1.20:8778). Vide = ecran de connexion.
+  // URL de base du noeud (ex : http://192.168.1.20:8778)
   const [baseUrl, setBaseUrl] = useState(null);
   const [tab, setTab] = useState("status");
 
