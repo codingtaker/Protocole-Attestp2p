@@ -1,0 +1,24 @@
+=== LIVRABLE SPRINT 2 — Démo session chiffrée Alice -> Bob ===
+
+Message en clair envoyé par Alice :
+  "Rendez-vous 14h porte Est -- code: SPRINT2-SECRET-1337"
+
+Message déchiffré par Bob (après handshake + AEAD) :
+  "Rendez-vous 14h porte Est -- code: SPRINT2-SECRET-1337"
+  -> déchiffrement correct : true
+
+Octets réellement transmis sur la socket TCP : 439 octets (4 segments)
+Le clair "SPRINT2-SECRET-1337" apparaît-il sur le fil ? NON
+
+Frame du message chiffré observée sur le réseau (107 octets) — hexdump :
+  0000  00 00 00 67 95 d6 78 44 38 9e 65 a6 4a a8 ac 25   ...g..xD8.e.J..%
+  0010  4b 80 66 68 89 84 e9 15 9f a3 e6 f6 1e ca b0 4f   K.fh...........O
+  0020  ec de 4a 54 43 d5 26 21 6d 05 1e 12 bb 73 d4 3e   ..JTC.&!m....s.>
+  0030  86 3f c3 fe 43 63 ab f7 e9 6a d4 82 93 b4 2e be   .?..Cc...j......
+  0040  84 43 33 03 6a ae 78 6b 1a 9f c1 7b 19 9d 1e 55   .C3.j.xk...{...U
+  0050  f5 8b af c1 c5 83 73 d3 15 d8 61 7e 75 05 af 17   ......s...a~u...
+  0060  bf 56 55 38 94 ed 0a 26 02 53 52                  .VU8...&.SR
+
+Capture réseau complète : demo/alice-bob.pcap
+  Ouvrir avec Wireshark, puis clic droit sur un segment -> "Follow > TCP Stream" :
+  le contenu est uniquement du chiffré (aucun texte lisible).
