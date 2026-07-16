@@ -1,6 +1,4 @@
 # AttestP2P
-
-<p><img src="assets/logo.svg" alt="AttestP2P" width="300"></p>
 **AttestP2P** est un protocole et un prototype de réseau **P2P chiffré de bout en
 bout**, en Node.js : découverte de pairs, messagerie chiffrée, transfert de
 fichiers façon BitTorrent, le tout authentifié (Ed25519) et confidentiel
