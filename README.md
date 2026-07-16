@@ -106,7 +106,7 @@ npm test                     # doit afficher tous les tests PASSES
 ```bash
 # Demarrer un noeud (daemon) + UI web locale
 node bin/archipel.js start --port 7778 --tcp 7777 --data ./.archipel
-# UI : http://127.0.0.1:8778   (controle = securePort + 1000 par defaut)
+# UI React : http://127.0.0.1:8778   (controle = securePort + 1000 par defaut)
 
 # Sans multicast (LAN restreint / conteneur) : bootstrap explicite
 node bin/archipel.js start --port 7778 --connect 192.168.1.20:7900
@@ -212,8 +212,8 @@ automatique par volume/temps).
   (authentifiees, bulk) ; affiner par une politique de QoS.
 - **Rekey** initie par une seule extremite ; pas de renouvellement d'identite
   longue duree.
-- **UI web** volontairement minimale (vanilla JS) ; une SPA React est un axe
-  d'amelioration.
+- **UI web** : SPA **React** (React UMD + htm, vendorée localement, sans CDN au
+  runtime). Un packaging Vite/build serait un axe d'industrialisation.
 
 ## Structure du depot
 
@@ -228,7 +228,7 @@ src/
   security/     attackLog.js
   file/         manifest.js . chunkStore.js . protocol.js . fileNode.js
   ai/           gemini.js                 (SEULE sortie externe, isolee)
-  node/         archipelNode.js . controlServer.js (+ UI) . trustStore.js
+  node/         archipelNode.js . controlServer.js . trustStore.js . ui/ (SPA React)
 bin/archipel.js                CLI
 tests/            sprint0..3, sprint3-file, discovery.multinode
 demo/             alice-bob (S2) . file-transfer (S3) . sprint4-e2e (S4)
