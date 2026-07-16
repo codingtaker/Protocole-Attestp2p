@@ -7,3 +7,4 @@ logs/
 .attestp2p/
 downloads/
 .archipel/
+src/node/ui/

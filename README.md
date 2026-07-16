@@ -239,3 +239,23 @@ demo/             alice-bob (S2) . file-transfer (S3) . sprint4-e2e (S4)
 
 ISC.
  
+## Application mobile (React Native / Expo)
+
+L'ancienne UI web (servie par le noeud) a ete retiree. L'interface est desormais
+une **application mobile React Native** (dossier `mobile/`), au **code source
+entierement modifiable** (aucune minification). Elle pilote le noeud via son API
+HTTP de controle.
+
+Demarrage rapide :
+
+```bash
+# 1) sur le PC : exposer l'API de controle au reseau local
+attestp2p start --control-host 0.0.0.0
+
+# 2) sur le poste de dev : lancer l'app (Expo Go sur le telephone)
+cd mobile
+npm install
+npx expo start
+```
+
+Construire un APK Android : voir `mobile/README.md` (EAS Build ou build local).

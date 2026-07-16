@@ -1,9 +1,9 @@
-// Sprint 4 — Nœud AttestP2P : assemble identité, serveur de sessions chiffrées,
-// discovery, PeerManager, transfert de fichiers (FileNode), chat chiffré, Web of
-// Trust, et l'assistant IA contextuel (Gemini, isolé et désactivable).
+// Noeud AttestP2P : assemble identite, serveur de sessions chiffrees, discovery,
+// PeerManager, transfert de fichiers (FileNode), chat chiffre, Web of Trust, et
+// l'assistant IA contextuel (Gemini, isole et desactivable).
 //
-// Multiplexage sur une même session chiffrée :
-//   octet de tête 0x10..0x15 -> protocole fichier ; 0x20 -> chat.
+// Multiplexage sur une meme session chiffree :
+//   octet de tete 0x10..0x15 -> protocole fichier ; 0x20 -> chat.
 
 const fs = require("fs");
 const path = require("path");
@@ -21,7 +21,7 @@ const { IpRateLimiter } = require("../network/ipRateLimiter");
 
 const CHAT = 0x20;
 const AI_CONTEXT_MESSAGES = Number(process.env.AI_CONTEXT_MESSAGES) || 10;
-// Sessions authentifiées de l'appli : débit élevé, per-IP relevé (bulk/chat).
+// Sessions authentifiees de l'appli : debit eleve, per-IP releve (bulk/chat).
 const SESSION_OPT = { maxMsgPerSecond: 1e6, rekeyPolicy: { everyMsgs: 1e9, everyBytes: 1e15, everyMs: 1e9 },
   ipRateLimiter: new IpRateLimiter(1e6, 1000) };
 
@@ -31,6 +31,7 @@ class AttestP2PNode extends EventEmitter {
     this.securePort = opts.securePort || 7778;
     this.tcpPort = opts.tcpPort || 7777;
     this.controlPort = opts.controlPort || (this.securePort + 1000);
+    this.controlHost = opts.controlHost || "127.0.0.1";
     this.dataDir = opts.dataDir || path.join(process.cwd(), ".attestp2p");
     this.downloadDir = opts.downloadDir || path.join(this.dataDir, "downloads");
     this.noAi = !!opts.noAi;
@@ -73,14 +74,12 @@ class AttestP2PNode extends EventEmitter {
       this.connect(hp.slice(0, i), Number(hp.slice(i + 1)));
     }
 
-    // API de contrôle HTTP + UI (chargée ici pour éviter un cycle de require).
     const { startControlServer } = require("./controlServer");
-    this.control = startControlServer(this, this.controlPort);
+    this.control = startControlServer(this, this.controlPort, this.controlHost);
 
-    // Fichier runtime pour la CLI (découverte du port de contrôle).
     fs.writeFileSync(path.join(this.dataDir, "runtime.json"), JSON.stringify({
       nodeId: this.selfHex, tcpPort: this.tcpPort, securePort: this.securePort,
-      controlPort: this.controlPort, pid: process.pid,
+      controlPort: this.controlPort, controlHost: this.controlHost, pid: process.pid,
     }, null, 2));
 
     return this;
@@ -121,8 +120,6 @@ class AttestP2PNode extends EventEmitter {
   _isAiTrigger(t) { return /@attestp2p-ai\b/.test(t) || /^\s*\/ask\b/.test(t); }
   _stripTrigger(t) { return t.replace(/@attestp2p-ai/g, "").replace(/^\s*\/ask\s*/, "").trim(); }
 
-  // --- API haut niveau (consommée par la CLI / l'UI) ---
-
   sendMessage(nodeIdHex, text) {
     const conn = this.sessionsByPeer.get(nodeIdHex);
     if (!conn) throw new Error("pas de session ouverte avec " + nodeIdHex.slice(0, 8));
@@ -137,13 +134,13 @@ class AttestP2PNode extends EventEmitter {
     const context = thread.slice(-AI_CONTEXT_MESSAGES);
     let reply;
     if (this.noAi) {
-      reply = "[IA désactivée — mode --no-ai]";
+      reply = "[IA desactivee - mode --no-ai]";
     } else {
       try {
-        const { queryGemini } = require("../ai/gemini"); // isolé
+        const { queryGemini } = require("../ai/gemini");
         reply = await queryGemini(context, query);
       } catch (e) {
-        reply = "[IA indisponible (" + (e.code || "ERR") + ") : " + e.message + "]"; // fallback gracieux
+        reply = "[IA indisponible (" + (e.code || "ERR") + ") : " + e.message + "]";
       }
     }
     thread.push({ dir: "ai", text: reply, ts: Date.now() });
@@ -154,7 +151,7 @@ class AttestP2PNode extends EventEmitter {
   sendFile(nodeIdHex, filepath) {
     if (!fs.existsSync(filepath)) throw new Error("fichier introuvable: " + filepath);
     const manifest = buildManifest(filepath);
-    this.fileNode.seed(manifest, filepath); // charge + annonce (MANIFEST+HAVE) aux sessions
+    this.fileNode.seed(manifest, filepath);
     return { file_id: manifest.file_id, filename: manifest.filename, size: manifest.size, nb_chunks: manifest.nb_chunks };
   }
 
@@ -190,7 +187,8 @@ class AttestP2PNode extends EventEmitter {
   status() {
     return {
       nodeId: this.selfHex,
-      tcpPort: this.tcpPort, securePort: this.securePort, controlPort: this.controlPort,
+      tcpPort: this.tcpPort, securePort: this.securePort,
+      controlPort: this.controlPort, controlHost: this.controlHost,
       peersDiscovered: this.discovery ? this.discovery.getPeers().length : 0,
       sessions: this.sessionsByPeer.size,
       filesLocal: Object.keys(this.store.index.files).length,

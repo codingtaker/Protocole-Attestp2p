@@ -1,38 +1,51 @@
-// Module 4.1 — Serveur HTTP local de contrôle (API JSON) + UI React servie en
-// statique (src/node/ui, React UMD + htm vendored, sans CDN au runtime).
-// Écoute sur 127.0.0.1 uniquement.
+// Serveur HTTP local de controle - API JSON PURE (aucune UI servie ici).
+// L'interface utilisateur est l'application mobile React Native (dossier mobile/),
+// qui consomme ces routes.
+//
+// - Par defaut on ecoute sur 127.0.0.1 (acces local uniquement).
+// - Pour piloter le noeud depuis un telephone sur le LAN : demarrer avec
+//   --control-host 0.0.0.0 (ATTENTION : expose l'API de controle au reseau local).
+// - En-tetes CORS permissifs (utile pour Expo Web / navigateur ; l'app RN n'en
+//   a pas besoin).
 
 const http = require("http");
 const url = require("url");
-const fs = require("fs");
-const path = require("path");
 
-const UI_DIR = path.join(__dirname, "ui");
-const MIME = { ".html": "text/html; charset=utf-8", ".js": "application/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".map": "application/json" };
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
 
-function send(res, code, obj) { res.writeHead(code, { "Content-Type": "application/json" }); res.end(JSON.stringify(obj)); }
-function readBody(req) {
-  return new Promise((resolve) => { let b = ""; req.on("data", (c) => (b += c)); req.on("end", () => { try { resolve(b ? JSON.parse(b) : {}); } catch { resolve({}); } }); });
+function send(res, code, obj) {
+  res.writeHead(code, { "Content-Type": "application/json", ...CORS });
+  res.end(JSON.stringify(obj));
 }
-function serveStatic(res, rel) {
-  const file = path.normalize(path.join(UI_DIR, rel));
-  if (!file.startsWith(UI_DIR)) { res.writeHead(403); return res.end("forbidden"); } // anti-traversal
-  fs.readFile(file, (err, data) => {
-    if (err) { res.writeHead(404); return res.end("not found"); }
-    res.writeHead(200, { "Content-Type": MIME[path.extname(file)] || "application/octet-stream" });
-    res.end(data);
+
+function readBody(req) {
+  return new Promise((resolve) => {
+    let b = "";
+    req.on("data", (c) => (b += c));
+    req.on("end", () => { try { resolve(b ? JSON.parse(b) : {}); } catch { resolve({}); } });
   });
 }
 
-function startControlServer(node, port) {
+function startControlServer(node, port, host = "127.0.0.1") {
   const server = http.createServer(async (req, res) => {
+    if (req.method === "OPTIONS") { res.writeHead(204, CORS); return res.end(); }
+
     const { pathname, query } = url.parse(req.url, true);
     try {
-      // --- UI statique ---
-      if (req.method === "GET" && pathname === "/") return serveStatic(res, "index.html");
-      if (req.method === "GET" && pathname.startsWith("/ui/")) return serveStatic(res, pathname.slice(4));
+      if (req.method === "GET" && pathname === "/") {
+        return send(res, 200, {
+          name: "AttestP2P",
+          api: "control",
+          ui: "application mobile React Native (dossier mobile/)",
+          routes: ["/status", "/peers", "/receive", "/messages?peer=",
+                   "/connect", "/msg", "/send", "/download", "/trust", "/ask"],
+        });
+      }
 
-      // --- API JSON ---
       if (req.method === "GET" && pathname === "/status") return send(res, 200, node.status());
       if (req.method === "GET" && pathname === "/peers") return send(res, 200, node.peersList());
       if (req.method === "GET" && pathname === "/receive") return send(res, 200, node.listAvailable());
@@ -47,10 +60,16 @@ function startControlServer(node, port) {
         if (pathname === "/trust") { return send(res, 200, { trusted: node.trustPeer(body.nodeId) }); }
         if (pathname === "/ask") { return send(res, 200, { reply: await node.askAI(body.nodeId, body.query) }); }
       }
+
       send(res, 404, { error: "route inconnue" });
-    } catch (e) { send(res, 400, { error: e.message }); }
+    } catch (e) {
+      send(res, 400, { error: e.message });
+    }
   });
-  server.listen(port, "127.0.0.1", () => console.log("🕹  Contrôle + UI React sur http://127.0.0.1:" + port));
+
+  server.listen(port, host, () => {
+    console.log("Controle : API sur http://" + host + ":" + port);
+  });
   return server;
 }
 
