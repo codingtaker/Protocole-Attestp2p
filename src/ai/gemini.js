@@ -11,7 +11,7 @@ function buildPrompt(context, query) {
     .map((m) => (m.dir === "out" ? "Moi" : m.dir === "ai" ? "IA" : "Pair") + ": " + m.text)
     .join("\n");
   return [
-    "Tu es l'assistant contextuel d'Archipel, un réseau P2P chiffré et décentralisé.",
+    "Tu es l'assistant contextuel d'AttestP2P, un réseau P2P chiffré et décentralisé.",
     "Réponds de façon concise et utile, en français.",
     history ? "\nContexte récent de la conversation :\n" + history : "",
     "\nQuestion : " + query,

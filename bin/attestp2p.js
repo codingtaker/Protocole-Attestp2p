@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-// Module 4.1 — CLI Archipel.
-//   archipel start [--port 7778] [--tcp 7777] [--control 8778] [--data DIR] [--no-ai] [--connect host:port ...]
-//   archipel peers | status | receive
-//   archipel msg <node_id> "texte"        (message chiffré ; /ask ou @archipel-ai → IA)
-//   archipel send <node_id> <filepath>    (partage un fichier)
-//   archipel download <file_id>
-//   archipel trust <node_id>              (Web of Trust)
-//   archipel connect <host:port>          (bootstrap sans multicast)
-//   archipel ask <node_id> "question"     (IA contextuelle)
+// Module 4.1 — CLI AttestP2P.
+//   attestp2p start [--port 7778] [--tcp 7777] [--control 8778] [--data DIR] [--no-ai] [--connect host:port ...]
+//   attestp2p peers | status | receive
+//   attestp2p msg <node_id> "texte"        (message chiffré ; /ask ou @attestp2p-ai → IA)
+//   attestp2p send <node_id> <filepath>    (partage un fichier)
+//   attestp2p download <file_id>
+//   attestp2p trust <node_id>              (Web of Trust)
+//   attestp2p connect <host:port>          (bootstrap sans multicast)
+//   attestp2p ask <node_id> "question"     (IA contextuelle)
 // Les commandes autres que "start" parlent à l'API de contrôle du nœud
 // (port lu dans <data>/runtime.json).
 
@@ -27,11 +27,11 @@ function getAll(name) {
   return out;
 }
 const hasFlag = (name) => argv.includes("--" + name);
-const dataDir = path.resolve(getFlag("data", path.join(process.cwd(), ".archipel")));
+const dataDir = path.resolve(getFlag("data", path.join(process.cwd(), ".attestp2p")));
 
 function api(method, route, body) {
   let rt; try { rt = JSON.parse(fs.readFileSync(path.join(dataDir, "runtime.json"), "utf8")); }
-  catch { console.error("Nœud introuvable. Lancez d'abord: archipel start (ou précisez --data)."); process.exit(1); }
+  catch { console.error("Nœud introuvable. Lancez d'abord: attestp2p start (ou précisez --data)."); process.exit(1); }
   return new Promise((resolve, reject) => {
     const data = body ? JSON.stringify(body) : null;
     const req = http.request({ host: "127.0.0.1", port: rt.controlPort, path: route, method,
@@ -46,10 +46,10 @@ const short = (h) => (h ? h.slice(0, 16) + "…" : h);
   if (cmd === "start") {
     // Identité et secret HMAC fixés AVANT de charger la config/les clés.
     process.env.IDENTITY_FILE = process.env.IDENTITY_FILE || path.join(dataDir, "identity.key");
-    process.env.HMAC_SECRET = process.env.HMAC_SECRET || "archipel";
+    process.env.HMAC_SECRET = process.env.HMAC_SECRET || "attestp2p";
     const fsx = require("fs"); fsx.mkdirSync(dataDir, { recursive: true });
-    const { ArchipelNode } = require("../src/node/archipelNode");
-    const node = new ArchipelNode({
+    const { AttestP2PNode } = require("../src/node/attestp2pNode");
+    const node = new AttestP2PNode({
       securePort: Number(getFlag("port", 7778)),
       tcpPort: Number(getFlag("tcp", 7777)),
       controlPort: Number(getFlag("control", 0)) || undefined,
@@ -57,7 +57,7 @@ const short = (h) => (h ? h.slice(0, 16) + "…" : h);
     });
     await node.start();
     const s = node.status();
-    console.log("🏝️  Nœud Archipel démarré");
+    console.log("🏝️  Nœud AttestP2P démarré");
     console.log("   node_id     : " + s.nodeId);
     console.log("   secure/tcp  : " + s.securePort + " / " + s.tcpPort);
     console.log("   contrôle+UI : http://127.0.0.1:" + s.controlPort);

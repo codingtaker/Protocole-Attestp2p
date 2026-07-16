@@ -1,12 +1,13 @@
-# Archipel
+# AttestP2P
 
-**Archipel** est un protocole et un prototype de réseau **P2P chiffré de bout en
+<p><img src="assets/logo.svg" alt="AttestP2P" width="300"></p>
+**AttestP2P** est un protocole et un prototype de réseau **P2P chiffré de bout en
 bout**, en Node.js : découverte de pairs, messagerie chiffrée, transfert de
 fichiers façon BitTorrent, le tout authentifié (Ed25519) et confidentiel
 (handshake X25519 + HKDF, chiffrement XChaCha20-Poly1305), avec un assistant IA
 contextuel optionnel (Gemini) clairement isolé et désactivable.
 
-> Le paquet npm s'appelle `attestp2p`. Le protocole/produit est « Archipel ».
+> Le paquet npm s'appelle `attestp2p`. Le protocole/produit est « AttestP2P ».
 
 ## Fonctionnalités
 
@@ -26,12 +27,12 @@ contextuel optionnel (Gemini) clairement isolé et désactivable.
 
 ```
                         +-------------------------------------------+
-                        |               Noeud Archipel              |
+                        |               Noeud AttestP2P              |
    CLI  -- HTTP ----->  +---------------+   +----------------------+ |
    UI web ----------->  | Controle HTTP |   | Assistant IA (Gemini)|-+--> (SEULE
                         |  + UI (4.1)   |   | isole, --no-ai (4.2) | |   sortie
                         +---------------+   +----------------------+ |   externe)
-                        |            ArchipelNode                    |
+                        |            AttestP2PNode                    |
                         |  chat chiffre . Web of Trust . fichiers    |
                         |  +--------------+   +---------------------+ |
                         |  |  FileNode    |   |  PeerManager        | |
@@ -61,7 +62,7 @@ Couches (de bas en haut) :
 3. **Decouverte & pairs** (`src/network/udpDiscovery.js`, `peerManager.js`).
 4. **Transfert de fichiers** (`src/file/*`) — manifest, chunk store, protocole,
    orchestrateur multi-source.
-5. **Noeud & interfaces** (`src/node/*`, `bin/archipel.js`, `src/ai/gemini.js`).
+5. **Noeud & interfaces** (`src/node/*`, `bin/attestp2p.js`, `src/ai/gemini.js`).
 
 ## Choix techniques
 
@@ -95,7 +96,7 @@ Prerequis : **Node.js >= 18** (pour `fetch` global) et npm.
 
 ```bash
 git clone https://github.com/codingtaker/Protocole-Archipel.git
-cd Protocole-Archipel        # (dossier local : "archipel")
+cd Protocole-Archipel        # (dossier local : "attestp2p")
 npm install
 cp .env.example .env         # puis editer HMAC_SECRET (ex: openssl rand -hex 32)
 npm test                     # doit afficher tous les tests PASSES
@@ -105,28 +106,28 @@ npm test                     # doit afficher tous les tests PASSES
 
 ```bash
 # Demarrer un noeud (daemon) + UI web locale
-node bin/archipel.js start --port 7778 --tcp 7777 --data ./.archipel
+node bin/attestp2p.js start --port 7778 --tcp 7777 --data ./.attestp2p
 # UI React : http://127.0.0.1:8778   (controle = securePort + 1000 par defaut)
 
 # Sans multicast (LAN restreint / conteneur) : bootstrap explicite
-node bin/archipel.js start --port 7778 --connect 192.168.1.20:7900
+node bin/attestp2p.js start --port 7778 --connect 192.168.1.20:7900
 
 # Mode offline strict (aucune sortie externe)
-node bin/archipel.js start --no-ai
+node bin/attestp2p.js start --no-ai
 ```
 
 Commandes CLI (dans un autre terminal, `--data` cible le noeud) :
 
 ```bash
-archipel peers                       # pairs decouverts / connectes
-archipel status                      # etat du noeud + stats reseau
-archipel msg <node_id> "Hello!"      # message chiffre (/ask ou @archipel-ai -> IA)
-archipel send <node_id> <fichier>    # partager un fichier
-archipel receive                     # fichiers disponibles
-archipel download <file_id>          # telecharger (verif SHA-256)
-archipel trust <node_id>             # approuver un pair (Web of Trust)
-archipel connect <host:port>         # bootstrap manuel
-archipel ask <node_id> "question"    # IA contextuelle
+attestp2p peers                       # pairs decouverts / connectes
+attestp2p status                      # etat du noeud + stats reseau
+attestp2p msg <node_id> "Hello!"      # message chiffre (/ask ou @attestp2p-ai -> IA)
+attestp2p send <node_id> <fichier>    # partager un fichier
+attestp2p receive                     # fichiers disponibles
+attestp2p download <file_id>          # telecharger (verif SHA-256)
+attestp2p trust <node_id>             # approuver un pair (Web of Trust)
+attestp2p connect <host:port>         # bootstrap manuel
+attestp2p ask <node_id> "question"    # IA contextuelle
 ```
 
 ## Guide de la demo (cas d'usage reproductibles)
@@ -179,7 +180,7 @@ npm run test:discovery # multi-noeuds UDP reel (skip propre si multicast indispo
 ## Assistant IA (Gemini) - isolation & offline
 
 - **Isole** dans `src/ai/gemini.js` : unique appel reseau sortant de tout le projet.
-- **Declenchement** : tag `@archipel-ai` ou `/ask` dans le chat, ou `archipel ask`.
+- **Declenchement** : tag `@attestp2p-ai` ou `/ask` dans le chat, ou `attestp2p ask`.
 - **Contexte** : les `AI_CONTEXT_MESSAGES` derniers messages du fil sont envoyes.
 - **Desactivation** : `--no-ai` -> le module n'est jamais appele.
 - **Fallback gracieux** : cle absente, reseau injoignable ou HTTP en erreur ->
@@ -228,8 +229,8 @@ src/
   security/     attackLog.js
   file/         manifest.js . chunkStore.js . protocol.js . fileNode.js
   ai/           gemini.js                 (SEULE sortie externe, isolee)
-  node/         archipelNode.js . controlServer.js . trustStore.js . ui/ (SPA React)
-bin/archipel.js                CLI
+  node/         attestp2pNode.js . controlServer.js . trustStore.js . ui/ (SPA React)
+bin/attestp2p.js                CLI
 tests/            sprint0..3, sprint3-file, discovery.multinode
 demo/             alice-bob (S2) . file-transfer (S3) . sprint4-e2e (S4)
 ```
@@ -237,3 +238,4 @@ demo/             alice-bob (S2) . file-transfer (S3) . sprint4-e2e (S4)
 ## Licence
 
 ISC.
+ 

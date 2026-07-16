@@ -1,13 +1,13 @@
 {
   "name": "attestp2p",
   "version": "1.0.0",
-  "description": "Archipel — protocole P2P securise (Ed25519+HMAC, handshake X25519+HKDF, sessions chiffrees, transfert de fichiers BitTorrent-like, chat + IA contextuelle)",
+  "description": "AttestP2P — protocole P2P securise (Ed25519+HMAC, handshake X25519+HKDF, sessions chiffrees, transfert de fichiers BitTorrent-like, chat + IA contextuelle)",
   "main": "src/index.js",
   "bin": {
-    "archipel": "bin/archipel.js"
+    "attestp2p": "bin/attestp2p.js"
   },
   "scripts": {
-    "start": "node bin/archipel.js start",
+    "start": "node bin/attestp2p.js start",
     "test:sprint0": "node tests/sprint0.test.js",
     "test:sprint1": "node tests/sprint1.test.js",
     "test:sprint2": "node tests/sprint2.test.js",

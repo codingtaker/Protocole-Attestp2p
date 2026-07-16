@@ -1,6 +1,6 @@
 // Module 3.4 — Stockage local et index des chunks.
-// Chaque nœud conserve les chunks téléchargés sous .archipel/<file_id>/<idx>.chunk
-// et maintient un index JSON (.archipel/index.json) des chunks disponibles.
+// Chaque nœud conserve les chunks téléchargés sous .attestp2p/<file_id>/<idx>.chunk
+// et maintient un index JSON (.attestp2p/index.json) des chunks disponibles.
 // Vérification d'intégrité (SHA-256) à l'écriture, réassemblage + SHA-256 final.
 
 const fs = require("fs");

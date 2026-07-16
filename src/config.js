@@ -19,7 +19,7 @@ module.exports = {
   NODE_NAME: process.env.NODE_NAME || "attestp2p-node",
   MULTICAST_ADDR: process.env.MULTICAST_ADDR || "239.255.42.99",
   MULTICAST_PORT: Number(process.env.MULTICAST_PORT) || 6000,
-  MAGIC: Buffer.from("ARCH"), // 4 bytes
+  MAGIC: Buffer.from("ATTP"), // 4 bytes
   getHmacKey,
 
   IDENTITY_FILE: process.env.IDENTITY_FILE || path.join(process.cwd(), "identity.key"),

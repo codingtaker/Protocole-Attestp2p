@@ -1,4 +1,4 @@
-// Sprint 4 — Nœud Archipel : assemble identité, serveur de sessions chiffrées,
+// Sprint 4 — Nœud AttestP2P : assemble identité, serveur de sessions chiffrées,
 // discovery, PeerManager, transfert de fichiers (FileNode), chat chiffré, Web of
 // Trust, et l'assistant IA contextuel (Gemini, isolé et désactivable).
 //
@@ -25,13 +25,13 @@ const AI_CONTEXT_MESSAGES = Number(process.env.AI_CONTEXT_MESSAGES) || 10;
 const SESSION_OPT = { maxMsgPerSecond: 1e6, rekeyPolicy: { everyMsgs: 1e9, everyBytes: 1e15, everyMs: 1e9 },
   ipRateLimiter: new IpRateLimiter(1e6, 1000) };
 
-class ArchipelNode extends EventEmitter {
+class AttestP2PNode extends EventEmitter {
   constructor(opts = {}) {
     super();
     this.securePort = opts.securePort || 7778;
     this.tcpPort = opts.tcpPort || 7777;
     this.controlPort = opts.controlPort || (this.securePort + 1000);
-    this.dataDir = opts.dataDir || path.join(process.cwd(), ".archipel");
+    this.dataDir = opts.dataDir || path.join(process.cwd(), ".attestp2p");
     this.downloadDir = opts.downloadDir || path.join(this.dataDir, "downloads");
     this.noAi = !!opts.noAi;
     this.bootstrap = opts.bootstrap || [];
@@ -118,8 +118,8 @@ class ArchipelNode extends EventEmitter {
     if (this._isAiTrigger(text)) this.askAI(peerHex, this._stripTrigger(text)).catch(() => {});
   }
 
-  _isAiTrigger(t) { return /@archipel-ai\b/.test(t) || /^\s*\/ask\b/.test(t); }
-  _stripTrigger(t) { return t.replace(/@archipel-ai/g, "").replace(/^\s*\/ask\s*/, "").trim(); }
+  _isAiTrigger(t) { return /@attestp2p-ai\b/.test(t) || /^\s*\/ask\b/.test(t); }
+  _stripTrigger(t) { return t.replace(/@attestp2p-ai/g, "").replace(/^\s*\/ask\s*/, "").trim(); }
 
   // --- API haut niveau (consommée par la CLI / l'UI) ---
 
@@ -211,4 +211,4 @@ class ArchipelNode extends EventEmitter {
   }
 }
 
-module.exports = { ArchipelNode, CHAT };
+module.exports = { AttestP2PNode, CHAT };

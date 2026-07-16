@@ -45,7 +45,7 @@ async function runTests() {
   // Test 3 — Parsing correct
   const parsed = parsePacket(packet);
 
-  assert.strictEqual(parsed.magic, "ARCH", "MAGIC incorrect");
+  assert.strictEqual(parsed.magic, "ATTP", "MAGIC incorrect");
   assert.strictEqual(parsed.type, 0x01, "TYPE incorrect");
   assert.strictEqual(parsed.nodeId.length, 32, "NODE_ID incorrect");
   assert.strictEqual(parsed.payloadLen, payload.length, "PAYLOAD_LEN incorrect");

@@ -1,5 +1,5 @@
 // Web of Trust minimal : ensemble des node_id explicitement approuvés par
-// l'utilisateur, persisté dans .archipel/trust.json.
+// l'utilisateur, persisté dans .attestp2p/trust.json.
 
 const fs = require("fs");
 const path = require("path");

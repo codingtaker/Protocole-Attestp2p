@@ -1,4 +1,4 @@
-/* UI React d'Archipel (sans build : React UMD + htm, vendored localement).
+/* UI React d'AttestP2P (sans build : React UMD + htm, vendored localement).
    Rappel React : les attributs de style sont des CLASSES CSS (jamais de
    style="..." en chaîne, qui déclenche l'erreur React #62). */
 const { useState, useEffect, useRef } = React;
@@ -79,11 +79,11 @@ function ChatTab({ peers, peer, setPeer }) {
       ${thread.length ? thread.map((m, i) => html`<div class="msg ${m.dir}" key=${i}>${m.text}</div>`) : html`<div class="muted">aucun message</div>`}
     </div>
     <div class="row mt10">
-      <input class="f1" placeholder="message… (astuce: /ask ou @archipel-ai pour l'IA)" value=${text}
+      <input class="f1" placeholder="message… (astuce: /ask ou @attestp2p-ai pour l'IA)" value=${text}
         onInput=${(e) => setText(e.target.value)} onKeyDown=${(e) => e.key === "Enter" && send()} disabled=${!peer}/>
       <button class="act" onClick=${send} disabled=${!peer}>Envoyer</button>
     </div>
-    <p class="muted mt6">Messages chiffrés (XChaCha20-Poly1305). <code>/ask</code> ou <code>@archipel-ai</code> interroge l'assistant IA.</p>
+    <p class="muted mt6">Messages chiffrés (XChaCha20-Poly1305). <code>/ask</code> ou <code>@attestp2p-ai</code> interroge l'assistant IA.</p>
   </div>`;
 }
 
@@ -134,7 +134,7 @@ function App() {
   const tabs = [["status", "Statut"], ["peers", "Pairs"], ["chat", "Chat"], ["files", "Fichiers"]];
   return html`<div>
     <header>
-      <h1>🏝️ Archipel</h1>
+      <h1><img class="logo" src="/ui/icon.svg" width="20" height="20" alt=""/>AttestP2P</h1>
       <span class="id">${status ? short(status.nodeId) : "…"}</span>
       <${Badges} s=${status}/>
     </header>
