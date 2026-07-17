@@ -12,7 +12,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#0f1720"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "android": {
       "package": "com.attestp2p.app",
       "versionCode": 1,
@@ -21,7 +23,13 @@
         "backgroundColor": "#0f1720"
       }
     },
-    "ios": { "bundleIdentifier": "com.attestp2p.app", "supportsTablet": true },
-    "web": { "favicon": "./assets/icon.png" }
+    "ios": {
+      "bundleIdentifier": "com.attestp2p.app",
+      "supportsTablet": true
+    },
+    "web": {
+      "favicon": "./assets/icon.png",
+      "bundler": "metro"
+    }
   }
 }

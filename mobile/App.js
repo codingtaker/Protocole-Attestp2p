@@ -11,7 +11,7 @@ import ChatScreen from "./src/screens/ChatScreen";
 import FilesScreen from "./src/screens/FilesScreen";
 
 export default function App() {
-  // URL de base du noeud (ex : http://192.168.1.20:8778)
+  // URL de base du noeud
   const [baseUrl, setBaseUrl] = useState(null);
   const [tab, setTab] = useState("status");
 
