@@ -155,6 +155,15 @@ class AttestP2PNode extends EventEmitter {
     return { file_id: manifest.file_id, filename: manifest.filename, size: manifest.size, nb_chunks: manifest.nb_chunks };
   }
 
+  uploadAndShare(nodeIdHex, filename, buffer) {
+    const safe = path.basename(String(filename || "fichier.bin")).replace(/[^\w.\- ]/g, "_") || "fichier.bin";
+    const dir = path.join(this.dataDir, "shared");
+    fs.mkdirSync(dir, { recursive: true });
+    const fp = path.join(dir, safe);
+    fs.writeFileSync(fp, buffer);
+    return this.sendFile(nodeIdHex, fp);
+  }
+
   listAvailable() {
     return Object.values(this.availableFiles).map(({ manifest, from }) => ({
       file_id: manifest.file_id, filename: manifest.filename, size: manifest.size,

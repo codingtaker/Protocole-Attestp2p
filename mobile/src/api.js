@@ -1,7 +1,4 @@
-// Client HTTP de l'API de controle d'un noeud AttestP2P.
-// Chaque methode renvoie une promesse resolue avec le JSON du noeud.
-// Aucune dependance externe : on utilise fetch (fourni par React Native).
-
+// API client
 async function request(baseUrl, method, route, body) {
   const res = await fetch(baseUrl + route, {
     method,
@@ -20,6 +17,7 @@ export function createClient(baseUrl) {
     connect: (host, port) => request(baseUrl, "POST", "/connect", { host, port }),
     msg: (nodeId, text) => request(baseUrl, "POST", "/msg", { nodeId, text }),
     send: (nodeId, filepath) => request(baseUrl, "POST", "/send", { nodeId, filepath }),
+    upload: (nodeId, filename, dataBase64) => request(baseUrl, "POST", "/upload", { nodeId, filename, dataBase64 }),
     download: (file_id) => request(baseUrl, "POST", "/download", { file_id }),
     trust: (nodeId) => request(baseUrl, "POST", "/trust", { nodeId }),
     ask: (nodeId, query) => request(baseUrl, "POST", "/ask", { nodeId, query }),
