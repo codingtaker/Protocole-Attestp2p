@@ -90,31 +90,176 @@ milieu et l'unknown-key-share.
 
 ## Installation
 
-Prerequis : **Node.js >= 18** (pour `fetch` global) et npm.
+Le projet est compose de **deux paquets** independants :
+
+| Paquet | Role | Ou l'installer |
+|---|---|---|
+| **Noeud** (`./`) | Coeur du protocole : identite, sessions chiffrees, API de controle HTTP | Sur un **PC** (Windows / Linux / macOS) qui restera actif et joignable |
+| **App mobile** (`./mobile`) | Interface graphique React Native / Expo | Sur un **telephone** Android/iOS via Expo Go, en APK, ou en version web |
+
+### 1. Prerequis
+
+- **Node.js >= 18** (fetch global requis) et **npm** : https://nodejs.org
+- **git**
+- **Expo Go** installe sur le telephone (Play Store Android / App Store iOS) si vous utilisez l'app mobile en mode developpement
+- PC et telephone sur le **meme reseau Wi-Fi** (usage LAN standard)
+
+### 2. Installer le noeud (sur le PC)
 
 ```bash
 git clone https://github.com/codingtaker/Protocole-Archipel.git
 cd Protocole-Archipel        # (dossier local : "attestp2p")
 npm install
-cp .env.example .env         # puis editer HMAC_SECRET (ex: openssl rand -hex 32)
-npm test                     # doit afficher tous les tests PASSES
+cp .env.example .env
 ```
 
-## Lancement
+Editer `.env` et renseigner au minimum :
+
+```env
+HMAC_SECRET=<generer avec: openssl rand -hex 32>
+# GEMINI_API_KEY=...   (optionnel, assistant IA ; laisser vide ou lancer --no-ai)
+```
+
+Verifier l'installation :
 
 ```bash
-# Demarrer un noeud (daemon) + UI web locale
-node bin/attestp2p.js start --port 7778 --tcp 7777 --data ./.attestp2p
-# UI React : http://127.0.0.1:8778   (controle = securePort + 1000 par defaut)
-
-# Sans multicast (LAN restreint / conteneur) : bootstrap explicite
-node bin/attestp2p.js start --port 7778 --connect 192.168.1.20:7900
-
-# Mode offline strict (aucune sortie externe)
-node bin/attestp2p.js start --no-ai
+npm test                    # tous les tests doivent passer
 ```
 
-Commandes CLI (dans un autre terminal, `--data` cible le noeud) :
+### 3. Installer l'application mobile
+
+```bash
+cd mobile
+npm install
+```
+
+Rien d'autre a installer pour un usage en developpement : Expo Go, sur le
+telephone, chargera le code au moment du scan du QR code.
+
+## Lancement du noeud
+
+**Cas standard** — le noeud accepte les connexions du telephone sur le LAN :
+
+```bash
+# depuis la racine du depot
+node bin/attestp2p.js start --control-host 0.0.0.0
+# equivalent si installe globalement :
+# attestp2p start --control-host 0.0.0.0
+```
+
+Sortie attendue :
+
+```
+Noeud AttestP2P demarre
+   node_id     : <cle publique Ed25519>
+   secure/tcp  : 7778 / 7777
+   API controle: http://0.0.0.0:8778
+   ...
+```
+
+**Autres modes** :
+
+```bash
+# Acces LOCAL uniquement (defaut) - aucun acces depuis le reseau
+attestp2p start
+
+# Bootstrap explicite (LAN sans multicast, conteneur, WSL, VPN)
+attestp2p start --control-host 0.0.0.0 --connect 192.168.1.42:7778
+
+# Mode offline strict : aucune sortie externe (IA desactivee)
+attestp2p start --no-ai
+```
+
+**Trouver l'IP du PC** (a saisir dans l'app mobile) :
+
+```powershell
+# Windows PowerShell
+ipconfig | Select-String IPv4
+```
+
+```bash
+# Linux / macOS
+hostname -I                       # ou :  ifconfig | grep 'inet '
+```
+
+Noter l'adresse IPv4 du LAN (typiquement `192.168.x.x` ou `10.x.x.x`).
+
+> **Firewall Windows** : autoriser Node.js sur le "reseau prive" au premier lancement.
+> **Firewall Linux** : ouvrir les ports en LAN, ex. `sudo ufw allow 7777:8778/tcp`.
+
+## Application mobile — installation et connexion
+
+L'interface graphique est une application **React Native / Expo** situee dans
+`mobile/`. Elle pilote le noeud via son API HTTP de controle. Trois manieres de
+l'utiliser (choisir une seule) :
+
+### Option A — Expo Go (recommande pour tester)
+
+1. Installer **Expo Go** sur le telephone (Play Store / App Store).
+2. Sur le PC, dans le dossier `mobile/`, lancer le serveur de developpement :
+
+   ```bash
+   cd mobile
+   npx expo start
+   ```
+
+3. Un QR code s'affiche dans le terminal. **Le scanner** :
+   - Android : depuis l'app **Expo Go**, bouton "Scan QR Code"
+   - iOS : depuis l'**appareil photo** natif (Expo Go s'ouvre automatiquement)
+
+   L'application se charge sur le telephone.
+4. Sur l'ecran de connexion, saisir l'URL de **votre** noeud :
+
+   ```
+   http://<IP-du-PC>:8778
+   ```
+
+   Exemple : `http://192.168.1.20:8778` (l'IP notee plus haut).
+   Le port `8778` = `securePort + 1000` (defaut : secure 7778 -> controle 8778).
+
+5. Appuyer sur **Se connecter**. L'app affiche desormais les onglets
+   **Statut / Pairs / Chat / Fichiers**.
+
+**Prerequis** : PC et telephone sur le **meme Wi-Fi**, et le noeud demarre
+avec `--control-host 0.0.0.0`. Sinon la connexion est refusee.
+
+### Option B — APK Android (installation permanente)
+
+Pour distribuer l'application sans passer par Expo Go :
+
+```bash
+cd mobile
+npm install -g eas-cli
+eas login                                # compte Expo gratuit
+eas build -p android --profile preview   # produit un .apk telechargeable
+```
+
+Ou en local (necessite Android SDK) :
+
+```bash
+cd mobile
+npx expo prebuild -p android
+cd android && ./gradlew assembleRelease
+# APK : android/app/build/outputs/apk/release/app-release.apk
+```
+
+Installer l'APK sur le telephone (autoriser "sources inconnues" une fois),
+lancer l'app, saisir la meme URL `http://<IP-du-PC>:8778`.
+
+### Option C — Version web (sans telephone)
+
+Utile pour un apercu depuis n'importe quel navigateur :
+
+```bash
+cd mobile
+npm run web                # dev : http://localhost:8081
+# ou export statique deployable (Vercel, Netlify, GitHub Pages, ...) :
+npm run export:web         # sortie dans mobile/dist/
+```
+
+## Rappel des commandes CLI
+
+Dans un autre terminal, sur le PC ou tourne le noeud (`--data` cible le noeud) :
 
 ```bash
 attestp2p peers                       # pairs decouverts / connectes
@@ -166,6 +311,67 @@ Demarre 2 noeuds (identites distinctes), les connecte, liste les pairs, envoie u
 message chiffre + declenche l'IA (fallback offline gracieux), partage puis
 telecharge un fichier (SHA-256 conforme), approuve un pair, affiche le statut.
 Preuve : `demo/sprint4-e2e-proof.txt`.
+
+## Utilisation en equipe / deploiement open source
+
+AttestP2P est **auto-heberge** : chaque personne fait tourner **son propre
+noeud** sur son PC, et les noeuds s'echangent messages et fichiers directement,
+sans serveur central.
+
+### Scenario 1 — plusieurs personnes sur le meme reseau local
+
+1. Chacun clone le depot, `npm install`, cree son `.env` (HMAC_SECRET partage
+   dans l'equipe), puis demarre :
+
+   ```bash
+   attestp2p start --control-host 0.0.0.0
+   ```
+
+2. La **decouverte automatique** via UDP multicast detecte les autres noeuds.
+   Verifier dans l'app mobile : onglet **Pairs** liste les nodeId decouverts.
+3. Chacun se connecte a son propre noeud depuis son telephone (via Expo Go
+   ou APK) en saisissant l'IP de **son** PC.
+4. Depuis l'app : discuter (onglet **Chat**), s'echanger des fichiers (onglet
+   **Fichiers**), **approuver** un pair (bouton "Trust" dans **Pairs**).
+
+### Scenario 2 — noeuds sur des reseaux differents (Internet)
+
+Le multicast ne traverse pas Internet. Il faut un **bootstrap explicite** :
+
+1. Un noeud doit etre **joignable** depuis l'exterieur : IP publique + port
+   TCP `7778` ouvert (redirection sur le routeur), ou tunnel type
+   **Tailscale / ZeroTier / ngrok TCP / Cloudflare Tunnel**.
+2. Les autres noeuds s'y connectent explicitement :
+
+   ```bash
+   attestp2p start --control-host 0.0.0.0 --connect <IP-publique>:7778
+   ```
+
+3. Une fois la premiere session ouverte, les pairs se decouvrent en cascade.
+
+### Scenario 3 — noeud distant + app mobile locale
+
+Heberger le noeud sur un serveur (VPS, Raspberry Pi, ...) et le piloter depuis
+son telephone :
+
+1. Sur le serveur : `attestp2p start --control-host 0.0.0.0`.
+2. Ne pas exposer directement le port `8778` sur Internet (pas d'auth) —
+   passer par un **tunnel SSH** ou un **VPN Tailscale**.
+3. Depuis le telephone (dans le meme reseau Tailscale/via SSH forward),
+   saisir l'URL correspondante dans l'app.
+
+### Notes de securite pour le deploiement
+
+- `--control-host 0.0.0.0` expose l'API de controle **sans authentification** :
+  ne l'utiliser **que sur un reseau de confiance**. Sur un hotspot / reseau
+  public, garder `127.0.0.1` (defaut) et passer par un tunnel SSH/VPN.
+- Le fichier `identity.key` contient la seed Ed25519 (identite du noeud) :
+  ne **jamais** le partager, ne pas le committer (deja dans `.gitignore`).
+- `HMAC_SECRET` protege le protocole binaire historique : le partager
+  uniquement au sein de l'essaim de confiance. Les sessions chiffrees (S3+)
+  n'en dependent plus.
+- Pour un vrai deploiement multi-utilisateurs, envisager Docker + Tailscale,
+  avec un `.env` et une `identity.key` par utilisateur.
 
 ## Tests
 
